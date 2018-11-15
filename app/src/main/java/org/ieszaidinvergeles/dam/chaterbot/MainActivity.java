@@ -60,13 +60,13 @@ public class MainActivity extends AppCompatActivity {
         init();
         m = new Manager(this);
 
-        List<Message> msgs= m.getLastMessages();
-        for(Message m : msgs){
+        List<Message> msgs = m.getLastMessages();
+        for (Message m : msgs) {
             addMessage(m);
         }
-        Log.v("TAGG","m:"+msgs.size());
-        if(msgs.size()>0)
-            addMessage(new Message("system","Last messages restored",System.currentTimeMillis()));
+        Log.v("TAGG", "m:" + msgs.size());
+        if (msgs.size() > 0)
+            addMessage(new Message("system", "Last messages restored", System.currentTimeMillis()));
 
         if (startBot()) {
             setEvents();
@@ -101,7 +101,11 @@ public class MainActivity extends AppCompatActivity {
             m.insert(men[0]);
             Message response;
             try {
-                response = new Message("bot",translate( botSession.think(men[0].getFrom()+"> "+translate(men[0].getMessage(),"es","en")),"en","es"), System.currentTimeMillis());
+                String mensajeES = men[0].getMessage();
+                String mensajeEN = translate(mensajeES, "es", "en");
+                String respuestaEN = botSession.think(mensajeEN);
+                String respuestaES = translate(respuestaEN, "en", "es");
+                response = new Message("bot", respuestaES, System.currentTimeMillis());
                 m.insert(response);
             } catch (final Exception e) {
                 response = new Message(getString(R.string.exception), e.toString(), System.currentTimeMillis());
@@ -135,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
             initialMessage = getString(R.string.messageException) + "\n" + getString(R.string.exception) + " " + e.toString();
             result = false;
         }
-        addMessage(new Message("system","bot "+initialMessage,System.currentTimeMillis()));
+        addMessage(new Message("system", "bot " + initialMessage, System.currentTimeMillis()));
         return result;
     }
 
@@ -148,13 +152,16 @@ public class MainActivity extends AppCompatActivity {
         imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
-    public String translate(String text, String from, String to){
-        HTTPR R = HTTP.postHtml("https://www.bing.com/ttranslate","&text="+text+"&from="+from+"&to="+to,HTTP.CONTENT_TYPE_URLENCODED);
-        JSONObject reader = null;
+    public String translate(String text, String from, String to) {
         try {
+            HTTPR R = HTTP.postHtml("https://www.bing.com/ttranslate", "&text=" + URLEncoder.encode(text, "UTF-8") + "&from=" + from + "&to=" + to, HTTP.CONTENT_TYPE_URLENCODED);
+            JSONObject reader = null;
+
             reader = new JSONObject(R.getContent());
             return reader.getString("translationResponse");
         } catch (JSONException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
         return "Error";
