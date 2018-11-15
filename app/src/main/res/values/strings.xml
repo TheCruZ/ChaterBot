@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">ChaterBot</string>
+    <string name="bot">bot></string>
+    <string name="conversacion">Conversación</string>
+    <string name="enviar">Enviar</string>
+    <string name="exception">exception</string>
+    <string name="mensaje">Mensaje</string>
+    <string name="messageConnected">Connected.</string>
+    <string name="messageException">Can not be created.</string>
+    <string name="you">you></string>
+</resources>
