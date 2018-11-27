@@ -3,6 +3,7 @@ package org.ieszaidinvergeles.dam.chaterbot;
 import android.app.Activity;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.speech.tts.TextToSpeech;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -11,6 +12,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import org.ieszaidinvergeles.dam.chaterbot.HTTP.HTTP;
 import org.ieszaidinvergeles.dam.chaterbot.HTTP.HTTPR;
@@ -35,6 +39,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -53,12 +58,29 @@ public class MainActivity extends AppCompatActivity {
     private ChatterBotSession botSession;
     private Manager m;
 
+    FirebaseDatabase DB;
+    DatabaseReference ref;
+
+    TextToSpeech tts;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         init();
         m = new Manager(this);
+        tts = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if(status != TextToSpeech.ERROR) {
+                    tts.setLanguage(new Locale("es", "ES"));
+                    tts.setPitch(10);
+                    tts.setSpeechRate(1);
+                }
+            }
+        });
+
+
 
         List<Message> msgs = m.getLastMessages();
         for (Message m : msgs) {
@@ -78,7 +100,8 @@ public class MainActivity extends AppCompatActivity {
         etTexto = findViewById(R.id.etTexto);
         svScroll = findViewById(R.id.svScroll);
         tvTexto = findViewById(R.id.tvTexto);
-
+        DB = FirebaseDatabase.getInstance();
+        ref = DB.getReference();
     }
 
     private void setEvents() {
@@ -101,10 +124,23 @@ public class MainActivity extends AppCompatActivity {
             m.insert(men[0]);
             Message response;
             try {
+                HashMap<String, Object> mapa = new HashMap<>();
+
                 String mensajeES = men[0].getMessage();
+
+
                 String mensajeEN = translate(mensajeES, "es", "en");
                 String respuestaEN = botSession.think(mensajeEN);
                 String respuestaES = translate(respuestaEN, "en", "es");
+
+                String key = ref.push().getKey();
+                mapa.put("/" + key + "/fecha", System.currentTimeMillis());
+                mapa.put("/" + key + "/versionES/msg", mensajeES);
+                mapa.put("/" + key + "/versionEN/msg", mensajeEN);
+                mapa.put("/" + key + "/versionEN/res", respuestaEN);
+                mapa.put("/" + key + "/versionES/res", respuestaES);
+                ref.updateChildren(mapa);
+                tts.speak(respuestaES,TextToSpeech.QUEUE_FLUSH, null);
                 response = new Message("bot", respuestaES, System.currentTimeMillis());
                 m.insert(response);
             } catch (final Exception e) {
